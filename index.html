@@ -11,7 +11,7 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start p-4 pb-12">
+<body class="min-h-screen flex flex-col items-center justify-start p-4 pb-16">
 
   <!-- Header -->
   <header class="w-full max-w-md flex justify-between items-center py-4 border-b border-slate-800">
@@ -25,44 +25,110 @@
     </div>
   </header>
 
-  <!-- Categories Bar -->
-  <div class="w-full max-w-md mt-4 flex gap-2 overflow-x-auto no-scrollbar py-1">
-    <button onclick="filterCategory('All')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-950">All</button>
-    <button onclick="filterCategory('Tech')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-slate-400 border border-slate-800">Tech</button>
-    <button onclick="filterCategory('Finance')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-slate-400 border border-slate-800">Finance</button>
-    <button onclick="filterCategory('Culture')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-slate-400 border border-slate-800">Culture</button>
+  <!-- Navigation Tabs -->
+  <div class="w-full max-w-md mt-4 grid grid-cols-2 bg-slate-900 p-1 rounded-2xl border border-slate-800">
+    <button id="tab-markets" onclick="switchView('markets')" class="py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all">🔥 Markets</button>
+    <button id="tab-leaderboard" onclick="switchView('leaderboard')" class="py-2 rounded-xl text-xs font-bold text-slate-400 transition-all">🏆 Leaderboard</button>
   </div>
 
-  <!-- Main Feed Container -->
-  <main id="market-feed" class="w-full max-w-md mt-4 flex flex-col gap-4">
-    <!-- Cards render dynamically via JavaScript -->
-  </main>
+  <!-- MARKETS VIEW -->
+  <div id="view-markets" class="w-full max-w-md flex flex-col gap-4 mt-4">
+    <div id="market-feed" class="flex flex-col gap-4"></div>
+  </div>
 
-  <!-- Active Trades Log -->
-  <div class="w-full max-w-md mt-6 bg-slate-900/50 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400">
-    <span class="font-bold text-slate-200">Active Positions:</span>
-    <div id="log-items" class="mt-2 flex flex-col gap-2">
-      <span class="text-slate-500 italic">No open trades yet. Tap YES or NO above!</span>
+  <!-- LEADERBOARD VIEW -->
+  <div id="view-leaderboard" class="w-full max-w-md hidden flex-col gap-3 mt-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl">
+      <h3 class="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">🏆 Top Predictors This Week</h3>
+      <div class="flex flex-col gap-2.5">
+        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+          <div class="flex items-center gap-3">
+            <span class="font-black text-amber-400 text-sm">#1</span>
+            <div>
+              <div class="font-bold text-slate-100">@SatoshiN</div>
+              <div class="text-[10px] text-slate-500">14 Win Streak</div>
+            </div>
+          </div>
+          <span class="font-bold text-emerald-400">+$12,450</span>
+        </div>
+        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+          <div class="flex items-center gap-3">
+            <span class="font-black text-slate-300 text-sm">#2</span>
+            <div>
+              <div class="font-bold text-slate-100">@AlexTech</div>
+              <div class="text-[10px] text-slate-500">9 Win Streak</div>
+            </div>
+          </div>
+          <span class="font-bold text-emerald-400">+$8,120</span>
+        </div>
+        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+          <div class="flex items-center gap-3">
+            <span class="font-black text-amber-600 text-sm">#3</span>
+            <div>
+              <div class="font-bold text-slate-100">@CryptoQueen</div>
+              <div class="text-[10px] text-slate-500">7 Win Streak</div>
+            </div>
+          </div>
+          <span class="font-bold text-emerald-400">+$5,890</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMENTS MODAL -->
+  <div id="comment-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 flex flex-col gap-4 shadow-2xl max-h-[80vh]">
+      <div class="flex justify-between items-center">
+        <h3 id="modal-title" class="font-bold text-sm text-slate-200 truncate pr-4">Market Discussion</h3>
+        <button onclick="closeComments()" class="text-slate-400 text-sm font-bold bg-slate-800 px-2.5 py-1 rounded-full">✕</button>
+      </div>
+
+      <!-- Comment List -->
+      <div id="comment-list" class="flex flex-col gap-2 overflow-y-auto max-h-60 text-xs pr-1"></div>
+
+      <!-- Comment Input -->
+      <div class="flex gap-2 pt-2 border-t border-slate-800">
+        <input id="comment-input" type="text" placeholder="Share your take..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white w-full focus:outline-none focus:border-emerald-500" />
+        <button onclick="addComment()" class="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">Post</button>
+      </div>
     </div>
   </div>
 
   <script>
     let userBalance = 250.00;
+    let activeMarketId = null;
 
     const markets = [
-      { id: 1, category: 'Tech', title: 'GPT-5 released before December 2026?', yes: 68, no: 32, vol: '$1.4M' },
-      { id: 2, category: 'Finance', title: 'Bitcoin breaks $120,000 in 2026?', yes: 42, no: 58, vol: '$3.8M' },
-      { id: 3, category: 'Culture', title: 'New Marvel movie breaks $1B opening weekend?', yes: 24, no: 76, vol: '$420K' },
-      { id: 4, category: 'Tech', title: 'Starship reaches orbit on next test flight?', yes: 85, no: 15, vol: '$890K' }
+      { 
+        id: 1, 
+        category: 'Tech', 
+        title: 'GPT-5 released before December 2026?', 
+        yes: 68, 
+        no: 32, 
+        vol: '$1.4M',
+        comments: [
+          { user: '@SamA', text: 'Training run is almost done, easily yes.' },
+          { user: '@TechGuy', text: 'Safety evals will delay it to 2027 IMO.' }
+        ]
+      },
+      { 
+        id: 2, 
+        category: 'Finance', 
+        title: 'Bitcoin breaks $120,000 in 2026?', 
+        yes: 42, 
+        no: 58, 
+        vol: '$3.8M',
+        comments: [
+          { user: '@Whale99', text: 'Institutional inflows are crazy right now.' }
+        ]
+      }
     ];
 
-    function renderMarkets(filter = 'All') {
+    function renderMarkets() {
       const feed = document.getElementById('market-feed');
       feed.innerHTML = '';
 
-      const filtered = filter === 'All' ? markets : markets.filter(m => m.category === filter);
-
-      filtered.forEach(m => {
+      markets.forEach(m => {
         const card = document.createElement('div');
         card.className = "bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4";
         card.innerHTML = `
@@ -85,11 +151,17 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 mt-1">
-            <button onclick="placeBet('${m.title}', 'YES', ${m.yes / 100})" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl transition-all active:scale-95 text-xs text-center">
+            <button onclick="placeBet('${m.title}', 'YES', ${m.yes / 100})" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl text-xs text-center">
               BET YES (${m.yes}¢)
             </button>
-            <button onclick="placeBet('${m.title}', 'NO', ${m.no / 100})" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl transition-all active:scale-95 text-xs text-center">
+            <button onclick="placeBet('${m.title}', 'NO', ${m.no / 100})" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl text-xs text-center">
               BET NO (${m.no}¢)
+            </button>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-400">
+            <button onclick="openComments(${m.id})" class="text-slate-400 hover:text-emerald-400 font-semibold flex items-center gap-1">
+              💬 ${m.comments.length} Discussion
             </button>
           </div>
         `;
@@ -101,29 +173,53 @@
       if (userBalance < 10) return alert("Insufficient funds!");
       userBalance -= 10;
       document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
-      
-      const potentialPayout = (10 / price).toFixed(2);
-      const logItems = document.getElementById('log-items');
-      
-      if (logItems.children[0]?.tagName === 'SPAN') logItems.innerHTML = '';
-
-      const item = document.createElement('div');
-      item.className = "flex justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs";
-      item.innerHTML = `
-        <div class="flex flex-col gap-0.5">
-          <span class="font-bold text-slate-200 truncate max-w-[200px]">${title}</span>
-          <span class="${side === 'YES' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${side} ($10 Wager)</span>
-        </div>
-        <span class="text-emerald-400 font-bold self-center">Payout: $${potentialPayout}</span>
-      `;
-      logItems.prepend(item);
+      alert(`Placed $10 bet on ${side} for: ${title}`);
     }
 
-    function filterCategory(cat) {
-      renderMarkets(cat);
+    function switchView(view) {
+      document.getElementById('view-markets').classList.toggle('hidden', view !== 'markets');
+      document.getElementById('view-leaderboard').classList.toggle('hidden', view !== 'leaderboard');
+      
+      document.getElementById('tab-markets').className = view === 'markets' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
+      document.getElementById('tab-leaderboard').className = view === 'leaderboard' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
     }
 
-    // Initial render
+    function openComments(id) {
+      activeMarketId = id;
+      const m = markets.find(x => x.id === id);
+      document.getElementById('modal-title').innerText = m.title;
+      renderComments();
+      document.getElementById('comment-modal').classList.remove('hidden');
+      document.getElementById('comment-modal').classList.add('flex');
+    }
+
+    function closeComments() {
+      document.getElementById('comment-modal').classList.add('hidden');
+      document.getElementById('comment-modal').classList.remove('flex');
+    }
+
+    function renderComments() {
+      const m = markets.find(x => x.id === activeMarketId);
+      const list = document.getElementById('comment-list');
+      list.innerHTML = '';
+      m.comments.forEach(c => {
+        const div = document.createElement('div');
+        div.className = "bg-slate-950 p-2.5 rounded-xl border border-slate-800";
+        div.innerHTML = `<span class="font-bold text-emerald-400">${c.user}:</span> <span class="text-slate-300">${c.text}</span>`;
+        list.appendChild(div);
+      });
+    }
+
+    function addComment() {
+      const input = document.getElementById('comment-input');
+      if (!input.value.trim()) return;
+      const m = markets.find(x => x.id === activeMarketId);
+      m.comments.push({ user: '@You', text: input.value.trim() });
+      input.value = '';
+      renderComments();
+      renderMarkets();
+    }
+
     renderMarkets();
   </script>
 </body>
