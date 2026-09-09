@@ -26,14 +26,36 @@
   </header>
 
   <!-- Navigation Tabs -->
-  <div class="w-full max-w-md mt-4 grid grid-cols-2 bg-slate-900 p-1 rounded-2xl border border-slate-800">
+  <div class="w-full max-w-md mt-4 grid grid-cols-3 bg-slate-900 p-1 rounded-2xl border border-slate-800">
     <button id="tab-markets" onclick="switchView('markets')" class="py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all">🔥 Markets</button>
-    <button id="tab-leaderboard" onclick="switchView('leaderboard')" class="py-2 rounded-xl text-xs font-bold text-slate-400 transition-all">🏆 Leaderboard</button>
+    <button id="tab-activity" onclick="switchView('activity')" class="py-2 rounded-xl text-xs font-bold text-slate-400 transition-all">📊 Activity</button>
+    <button id="tab-leaderboard" onclick="switchView('leaderboard')" class="py-2 rounded-xl text-xs font-bold text-slate-400 transition-all">🏆 Ranks</button>
   </div>
 
   <!-- MARKETS VIEW -->
   <div id="view-markets" class="w-full max-w-md flex flex-col gap-4 mt-4">
     <div id="market-feed" class="flex flex-col gap-4"></div>
+  </div>
+
+  <!-- ACTIVITY / PORTFOLIO VIEW -->
+  <div id="view-activity" class="w-full max-w-md hidden flex-col gap-4 mt-4">
+    <!-- P&L Summary Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl flex justify-between items-center">
+      <div>
+        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Portfolio Value</div>
+        <div id="portfolio-val" class="text-xl font-black text-white mt-0.5">$250.00</div>
+      </div>
+      <div class="text-right">
+        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Unrealized P&L</div>
+        <div id="pnl-val" class="text-sm font-bold text-slate-400 mt-0.5">$0.00</div>
+      </div>
+    </div>
+
+    <!-- Active Bets List -->
+    <div class="flex flex-col gap-2">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Open Positions</h3>
+      <div id="bets-feed" class="flex flex-col gap-3"></div>
+    </div>
   </div>
 
   <!-- LEADERBOARD VIEW -->
@@ -61,16 +83,6 @@
           </div>
           <span class="font-bold text-emerald-400">+$8,120</span>
         </div>
-        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
-          <div class="flex items-center gap-3">
-            <span class="font-black text-amber-600 text-sm">#3</span>
-            <div>
-              <div class="font-bold text-slate-100">@CryptoQueen</div>
-              <div class="text-[10px] text-slate-500">7 Win Streak</div>
-            </div>
-          </div>
-          <span class="font-bold text-emerald-400">+$5,890</span>
-        </div>
       </div>
     </div>
   </div>
@@ -82,11 +94,7 @@
         <h3 id="modal-title" class="font-bold text-sm text-slate-200 truncate pr-4">Market Discussion</h3>
         <button onclick="closeComments()" class="text-slate-400 text-sm font-bold bg-slate-800 px-2.5 py-1 rounded-full">✕</button>
       </div>
-
-      <!-- Comment List -->
       <div id="comment-list" class="flex flex-col gap-2 overflow-y-auto max-h-60 text-xs pr-1"></div>
-
-      <!-- Comment Input -->
       <div class="flex gap-2 pt-2 border-t border-slate-800">
         <input id="comment-input" type="text" placeholder="Share your take..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white w-full focus:outline-none focus:border-emerald-500" />
         <button onclick="addComment()" class="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">Post</button>
@@ -97,6 +105,7 @@
   <script>
     let userBalance = 250.00;
     let activeMarketId = null;
+    let myBets = [];
 
     const markets = [
       { 
@@ -120,17 +129,6 @@
         vol: '$3.8M',
         comments: [
           { user: '@Whale99', text: 'Institutional inflows are crazy right now.' }
-        ]
-      },
-      { 
-        id: 3, 
-        category: 'Entertainment', 
-        title: 'Marvel Avengers Doomsday hits $2B Box Office?', 
-        yes: 55, 
-        no: 45, 
-        vol: '$890K',
-        comments: [
-          { user: '@Cinephile', text: 'Robert Downey Jr return guarantees opening weekend hype.' }
         ]
       }
     ];
@@ -162,10 +160,10 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2 mt-1">
-            <button onclick="placeBet('${m.title}', 'YES', ${m.yes / 100})" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl text-xs text-center">
+            <button onclick="placeBet('${m.title}', 'YES', ${m.yes})" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl text-xs text-center">
               BET YES (${m.yes}¢)
             </button>
-            <button onclick="placeBet('${m.title}', 'NO', ${m.no / 100})" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl text-xs text-center">
+            <button onclick="placeBet('${m.title}', 'NO', ${m.no})" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl text-xs text-center">
               BET NO (${m.no}¢)
             </button>
           </div>
@@ -180,18 +178,67 @@
       });
     }
 
-    function placeBet(title, side, price) {
+    function placeBet(title, side, priceCents) {
       if (userBalance < 10) return alert("Insufficient funds!");
       userBalance -= 10;
       document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
-      alert(`Placed $10 bet on ${side} for: ${title}`);
+
+      myBets.push({
+        id: Date.now(),
+        title: title,
+        side: side,
+        amount: 10,
+        priceBought: priceCents
+      });
+
+      renderActivity();
+      alert(`Placed $10 bet on ${side}! Check your Activity tab.`);
+    }
+
+    function renderActivity() {
+      const feed = document.getElementById('bets-feed');
+      feed.innerHTML = '';
+
+      if (myBets.length === 0) {
+        feed.innerHTML = `<div class="bg-slate-900/50 border border-slate-800/80 p-6 rounded-2xl text-center text-xs text-slate-500">No active positions yet. Place a bet from the Markets tab!</div>`;
+      } else {
+        myBets.forEach(b => {
+          const div = document.createElement('div');
+          div.className = "bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center text-xs";
+          div.innerHTML = `
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="${b.side === 'YES' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} font-bold px-2 py-0.5 rounded text-[10px]">${b.side}</span>
+                <span class="font-bold text-white truncate max-w-[180px]">${b.title}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 mt-1">Bought @ ${b.priceBought}¢ • Stake: $${b.amount}.00</div>
+            </div>
+            <button onclick="cashOut(${b.id})" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-700">Cash Out</button>
+          `;
+          feed.appendChild(div);
+        });
+      }
+
+      // Update Portfolio calculations
+      const totalInBets = myBets.length * 10;
+      const totalVal = userBalance + totalInBets;
+      document.getElementById('portfolio-val').innerText = '$' + totalVal.toFixed(2);
+    }
+
+    function cashOut(id) {
+      myBets = myBets.filter(b => b.id !== id);
+      userBalance += 10; // Simple cash out refund simulation
+      document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
+      renderActivity();
     }
 
     function switchView(view) {
       document.getElementById('view-markets').classList.toggle('hidden', view !== 'markets');
+      document.getElementById('view-activity').classList.toggle('hidden', view !== 'activity');
       document.getElementById('view-leaderboard').classList.toggle('hidden', view !== 'leaderboard');
       
       document.getElementById('tab-markets').className = view === 'markets' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
+      document.getElementById('tab-activity').className = view === 'activity' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
       document.getElementById('tab-leaderboard').className = view === 'leaderboard' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
     }
 
@@ -232,6 +279,7 @@
     }
 
     renderMarkets();
+    renderActivity();
   </script>
 </body>
 </html>
