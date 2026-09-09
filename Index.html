@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSE - Event Prediction Market</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #020617; color: #f8fafc; font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-4">
+
+  <!-- Header -->
+  <header class="w-full max-w-md flex justify-between items-center py-4 border-b border-slate-800">
+    <div class="flex items-center gap-2">
+      <div class="bg-emerald-400 text-slate-950 font-black p-2 rounded-xl text-xl">⚡</div>
+      <span class="font-black text-2xl tracking-tight text-white">PULSE</span>
+    </div>
+    <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
+      <span class="text-xs text-slate-400">Balance</span>
+      <span id="balance" class="text-sm font-bold text-emerald-400">$250.00</span>
+    </div>
+  </header>
+
+  <!-- Main Card Container -->
+  <main class="w-full max-w-md mt-6 flex flex-col gap-4">
+    
+    <!-- Pulse Market Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <span class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/20">TECH MARKET</span>
+        <span class="text-xs text-slate-500">Ends Dec 2026</span>
+      </div>
+
+      <h2 class="text-xl font-extrabold text-white leading-snug">Will GPT-5 be publicly released before December 2026?</h2>
+
+      <!-- Odds Split Bar -->
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between text-xs font-bold">
+          <span class="text-emerald-400">YES 68¢ (68%)</span>
+          <span class="text-rose-400">(32%) NO 32¢</span>
+        </div>
+        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
+          <div class="bg-emerald-500 h-full w-[68%]"></div>
+          <div class="bg-rose-500 h-full w-[32%]"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-3 mt-2">
+        <button onclick="placeBet('YES', 0.68)" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3.5 rounded-2xl transition-all active:scale-95 text-center shadow-lg shadow-emerald-500/10">
+          BET YES ($0.68)
+        </button>
+        <button onclick="placeBet('NO', 0.32)" class="bg-rose-500 hover:bg-rose-400 text-white font-black py-3.5 rounded-2xl transition-all active:scale-95 text-center shadow-lg shadow-rose-500/10">
+          BET NO ($0.32)
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Log -->
+    <div id="log" class="hidden bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs text-slate-400">
+      <span class="font-bold text-slate-200">Active Bets:</span>
+      <div id="log-items" class="mt-2 flex flex-col gap-1"></div>
+    </div>
+
+  </main>
+
+  <script>
+    let userBalance = 250.00;
+    function placeBet(side, price) {
+      if (userBalance < 10) return alert("Out of funds!");
+      userBalance -= 10;
+      document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
+      
+      const potentialPayout = (10 / price).toFixed(2);
+      const log = document.getElementById('log');
+      const logItems = document.getElementById('log-items');
+      
+      log.classList.remove('hidden');
+      const item = document.createElement('div');
+      item.className = "flex justify-between bg-slate-950 p-2 rounded-lg border border-slate-800";
+      item.innerHTML = `<span class="font-bold ${side === 'YES' ? 'text-emerald-400' : 'text-rose-400'}">${side} ($10 Wager)</span> <span>Max Payout: $${potentialPayout}</span>`;
+      logItems.prepend(item);
+    }
+  </script>
+</body>
+</html>
