@@ -7,9 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #020617; color: #f8fafc; font-family: system-ui, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start p-4">
+<body class="min-h-screen flex flex-col items-center justify-start p-4 pb-12">
 
   <!-- Header -->
   <header class="w-full max-w-md flex justify-between items-center py-4 border-b border-slate-800">
@@ -23,66 +25,106 @@
     </div>
   </header>
 
-  <!-- Main Card Container -->
-  <main class="w-full max-w-md mt-6 flex flex-col gap-4">
-    
-    <!-- Pulse Market Card -->
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col gap-4">
-      <div class="flex justify-between items-center">
-        <span class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/20">TECH MARKET</span>
-        <span class="text-xs text-slate-500">Ends Dec 2026</span>
-      </div>
+  <!-- Categories Bar -->
+  <div class="w-full max-w-md mt-4 flex gap-2 overflow-x-auto no-scrollbar py-1">
+    <button onclick="filterCategory('All')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-950">All</button>
+    <button onclick="filterCategory('Tech')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-slate-400 border border-slate-800">Tech</button>
+    <button onclick="filterCategory('Finance')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-slate-400 border border-slate-800">Finance</button>
+    <button onclick="filterCategory('Culture')" class="cat-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-slate-400 border border-slate-800">Culture</button>
+  </div>
 
-      <h2 class="text-xl font-extrabold text-white leading-snug">Will GPT-5 be publicly released before December 2026?</h2>
-
-      <!-- Odds Split Bar -->
-      <div class="flex flex-col gap-2">
-        <div class="flex justify-between text-xs font-bold">
-          <span class="text-emerald-400">YES 68¢ (68%)</span>
-          <span class="text-rose-400">(32%) NO 32¢</span>
-        </div>
-        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
-          <div class="bg-emerald-500 h-full w-[68%]"></div>
-          <div class="bg-rose-500 h-full w-[32%]"></div>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="grid grid-cols-2 gap-3 mt-2">
-        <button onclick="placeBet('YES', 0.68)" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3.5 rounded-2xl transition-all active:scale-95 text-center shadow-lg shadow-emerald-500/10">
-          BET YES ($0.68)
-        </button>
-        <button onclick="placeBet('NO', 0.32)" class="bg-rose-500 hover:bg-rose-400 text-white font-black py-3.5 rounded-2xl transition-all active:scale-95 text-center shadow-lg shadow-rose-500/10">
-          BET NO ($0.32)
-        </button>
-      </div>
-    </div>
-
-    <!-- Live Log -->
-    <div id="log" class="hidden bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 text-xs text-slate-400">
-      <span class="font-bold text-slate-200">Active Bets:</span>
-      <div id="log-items" class="mt-2 flex flex-col gap-1"></div>
-    </div>
-
+  <!-- Main Feed Container -->
+  <main id="market-feed" class="w-full max-w-md mt-4 flex flex-col gap-4">
+    <!-- Cards render dynamically via JavaScript -->
   </main>
+
+  <!-- Active Trades Log -->
+  <div class="w-full max-w-md mt-6 bg-slate-900/50 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400">
+    <span class="font-bold text-slate-200">Active Positions:</span>
+    <div id="log-items" class="mt-2 flex flex-col gap-2">
+      <span class="text-slate-500 italic">No open trades yet. Tap YES or NO above!</span>
+    </div>
+  </div>
 
   <script>
     let userBalance = 250.00;
-    function placeBet(side, price) {
-      if (userBalance < 10) return alert("Out of funds!");
+
+    const markets = [
+      { id: 1, category: 'Tech', title: 'GPT-5 released before December 2026?', yes: 68, no: 32, vol: '$1.4M' },
+      { id: 2, category: 'Finance', title: 'Bitcoin breaks $120,000 in 2026?', yes: 42, no: 58, vol: '$3.8M' },
+      { id: 3, category: 'Culture', title: 'New Marvel movie breaks $1B opening weekend?', yes: 24, no: 76, vol: '$420K' },
+      { id: 4, category: 'Tech', title: 'Starship reaches orbit on next test flight?', yes: 85, no: 15, vol: '$890K' }
+    ];
+
+    function renderMarkets(filter = 'All') {
+      const feed = document.getElementById('market-feed');
+      feed.innerHTML = '';
+
+      const filtered = filter === 'All' ? markets : markets.filter(m => m.category === filter);
+
+      filtered.forEach(m => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4";
+        card.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-500/20">${m.category.toUpperCase()}</span>
+            <span class="text-xs text-slate-500">Vol: ${m.vol}</span>
+          </div>
+
+          <h2 class="text-lg font-bold text-white leading-snug">${m.title}</h2>
+
+          <div class="flex flex-col gap-1.5">
+            <div class="flex justify-between text-xs font-bold">
+              <span class="text-emerald-400">YES ${m.yes}¢ (${m.yes}%)</span>
+              <span class="text-rose-400">(${m.no}%) NO ${m.no}¢</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex">
+              <div class="bg-emerald-500 h-full" style="width: ${m.yes}%"></div>
+              <div class="bg-rose-500 h-full" style="width: ${m.no}%"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <button onclick="placeBet('${m.title}', 'YES', ${m.yes / 100})" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl transition-all active:scale-95 text-xs text-center">
+              BET YES (${m.yes}¢)
+            </button>
+            <button onclick="placeBet('${m.title}', 'NO', ${m.no / 100})" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl transition-all active:scale-95 text-xs text-center">
+              BET NO (${m.no}¢)
+            </button>
+          </div>
+        `;
+        feed.appendChild(card);
+      });
+    }
+
+    function placeBet(title, side, price) {
+      if (userBalance < 10) return alert("Insufficient funds!");
       userBalance -= 10;
       document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
       
       const potentialPayout = (10 / price).toFixed(2);
-      const log = document.getElementById('log');
       const logItems = document.getElementById('log-items');
       
-      log.classList.remove('hidden');
+      if (logItems.children[0]?.tagName === 'SPAN') logItems.innerHTML = '';
+
       const item = document.createElement('div');
-      item.className = "flex justify-between bg-slate-950 p-2 rounded-lg border border-slate-800";
-      item.innerHTML = `<span class="font-bold ${side === 'YES' ? 'text-emerald-400' : 'text-rose-400'}">${side} ($10 Wager)</span> <span>Max Payout: $${potentialPayout}</span>`;
+      item.className = "flex justify-between bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs";
+      item.innerHTML = `
+        <div class="flex flex-col gap-0.5">
+          <span class="font-bold text-slate-200 truncate max-w-[200px]">${title}</span>
+          <span class="${side === 'YES' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${side} ($10 Wager)</span>
+        </div>
+        <span class="text-emerald-400 font-bold self-center">Payout: $${potentialPayout}</span>
+      `;
       logItems.prepend(item);
     }
+
+    function filterCategory(cat) {
+      renderMarkets(cat);
+    }
+
+    // Initial render
+    renderMarkets();
   </script>
 </body>
 </html>
