@@ -37,21 +37,19 @@
     <div id="market-feed" class="flex flex-col gap-4"></div>
   </div>
 
-  <!-- ACTIVITY / PORTFOLIO VIEW -->
+  <!-- ACTIVITY VIEW -->
   <div id="view-activity" class="w-full max-w-md hidden flex-col gap-4 mt-4">
-    <!-- P&L Summary Card -->
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl flex justify-between items-center">
       <div>
         <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Portfolio Value</div>
         <div id="portfolio-val" class="text-xl font-black text-white mt-0.5">$250.00</div>
       </div>
       <div class="text-right">
-        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Unrealized P&L</div>
-        <div id="pnl-val" class="text-sm font-bold text-slate-400 mt-0.5">$0.00</div>
+        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Trades</div>
+        <div id="active-count" class="text-sm font-bold text-emerald-400 mt-0.5">0 Trades</div>
       </div>
     </div>
 
-    <!-- Active Bets List -->
     <div class="flex flex-col gap-2">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Open Positions</h3>
       <div id="bets-feed" class="flex flex-col gap-3"></div>
@@ -102,6 +100,46 @@
     </div>
   </div>
 
+  <!-- FLEX CARD / SHARE MODAL -->
+  <div id="flex-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500/40 w-full max-w-sm rounded-3xl p-6 flex flex-col gap-5 shadow-2xl text-center relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
+      
+      <div class="flex justify-center items-center gap-2">
+        <div class="bg-emerald-400 text-slate-950 font-black p-1.5 rounded-lg text-sm">⚡</div>
+        <span class="font-black text-xl tracking-tight text-white">PULSE</span>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">TRADE CASHED OUT</span>
+        <h3 id="flex-title" class="text-base font-black text-white leading-snug px-2">GPT-5 Released Before Dec 2026</h3>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800/80 p-4 rounded-2xl flex justify-around items-center">
+        <div>
+          <div class="text-[9px] text-slate-500 uppercase font-bold">Pick</div>
+          <div id="flex-side" class="text-sm font-black text-emerald-400">YES</div>
+        </div>
+        <div class="h-6 w-px bg-slate-800"></div>
+        <div>
+          <div class="text-[9px] text-slate-500 uppercase font-bold">Profit</div>
+          <div id="flex-profit" class="text-sm font-black text-emerald-400">+$14.70</div>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-400 font-semibold italic">"Called it on PULSE ⚡"</div>
+
+      <div class="flex flex-col gap-2">
+        <button onclick="copyFlexShare()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition-all text-xs">
+          📋 Copy Share Text
+        </button>
+        <button onclick="closeFlexModal()" class="text-slate-500 text-xs font-bold py-1">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let userBalance = 250.00;
     let activeMarketId = null;
@@ -116,8 +154,7 @@
         no: 32, 
         vol: '$1.4M',
         comments: [
-          { user: '@SamA', text: 'Training run is almost done, easily yes.' },
-          { user: '@TechGuy', text: 'Safety evals will delay it to 2027 IMO.' }
+          { user: '@SamA', text: 'Training run is almost done, easily yes.' }
         ]
       },
       { 
@@ -183,12 +220,15 @@
       userBalance -= 10;
       document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
 
+      const potentialPayout = (10 / (priceCents / 100)).toFixed(2);
+
       myBets.push({
         id: Date.now(),
         title: title,
         side: side,
         amount: 10,
-        priceBought: priceCents
+        priceBought: priceCents,
+        payout: potentialPayout
       });
 
       renderActivity();
@@ -198,6 +238,8 @@
     function renderActivity() {
       const feed = document.getElementById('bets-feed');
       feed.innerHTML = '';
+
+      document.getElementById('active-count').innerText = `${myBets.length} Trades`;
 
       if (myBets.length === 0) {
         feed.innerHTML = `<div class="bg-slate-900/50 border border-slate-800/80 p-6 rounded-2xl text-center text-xs text-slate-500">No active positions yet. Place a bet from the Markets tab!</div>`;
@@ -209,27 +251,52 @@
             <div>
               <div class="flex items-center gap-2">
                 <span class="${b.side === 'YES' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} font-bold px-2 py-0.5 rounded text-[10px]">${b.side}</span>
-                <span class="font-bold text-white truncate max-w-[180px]">${b.title}</span>
+                <span class="font-bold text-white truncate max-w-[170px]">${b.title}</span>
               </div>
-              <div class="text-[10px] text-slate-500 mt-1">Bought @ ${b.priceBought}¢ • Stake: $${b.amount}.00</div>
+              <div class="text-[10px] text-slate-500 mt-1">Stake: $${b.amount}.00 • Max Payout: $${b.payout}</div>
             </div>
-            <button onclick="cashOut(${b.id})" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-slate-700">Cash Out</button>
+            <button onclick="triggerCashOut(${b.id})" class="bg-emerald-500 text-slate-950 text-[10px] font-black px-3 py-2 rounded-xl shadow-lg shadow-emerald-500/10">Cash Out</button>
           `;
           feed.appendChild(div);
         });
       }
 
-      // Update Portfolio calculations
       const totalInBets = myBets.length * 10;
       const totalVal = userBalance + totalInBets;
       document.getElementById('portfolio-val').innerText = '$' + totalVal.toFixed(2);
     }
 
-    function cashOut(id) {
-      myBets = myBets.filter(b => b.id !== id);
-      userBalance += 10; // Simple cash out refund simulation
+    function triggerCashOut(id) {
+      const b = myBets.find(x => x.id === id);
+      const profit = (b.payout - b.amount).toFixed(2);
+
+      document.getElementById('flex-title').innerText = b.title;
+      document.getElementById('flex-side').innerText = b.side;
+      document.getElementById('flex-profit').innerText = `+$${profit}`;
+
+      userBalance += parseFloat(b.payout);
       document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
+
+      myBets = myBets.filter(x => x.id !== id);
       renderActivity();
+
+      const modal = document.getElementById('flex-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeFlexModal() {
+      const modal = document.getElementById('flex-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function copyFlexShare() {
+      const title = document.getElementById('flex-title').innerText;
+      const profit = document.getElementById('flex-profit').innerText;
+      const text = `Just cashed out ${profit} on PULSE calling "${title}"! ⚡ Check out PULSE app to trade live event predictions.`;
+      navigator.clipboard.writeText(text);
+      alert("Share text copied to clipboard!");
     }
 
     function switchView(view) {
