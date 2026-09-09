@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PULSE - Event Prediction Market</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background-color: #020617; color: #f8fafc; font-family: system-ui, sans-serif; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -19,11 +21,20 @@
       <div class="bg-emerald-400 text-slate-950 font-black p-2 rounded-xl text-xl">⚡</div>
       <span class="font-black text-2xl tracking-tight text-white">PULSE</span>
     </div>
-    <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
-      <span class="text-xs text-slate-400">Balance</span>
-      <span id="balance" class="text-sm font-bold text-emerald-400">$250.00</span>
+    <div class="flex items-center gap-2">
+      <div id="user-display" class="text-xs text-slate-400 font-bold hidden"></div>
+      <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
+        <span class="text-xs text-slate-400">Balance</span>
+        <span id="balance" class="text-sm font-bold text-emerald-400">$250.00</span>
+      </div>
     </div>
   </header>
+
+  <!-- Auth Modal Container -->
+  <div id="auth-banner" class="w-full max-w-md mt-4 bg-slate-900/80 border border-emerald-500/30 p-4 rounded-2xl flex justify-between items-center text-xs">
+    <span class="text-slate-300">Sign in to save portfolio & chat across devices!</span>
+    <button onclick="toggleAuthModal()" class="bg-emerald-500 text-slate-950 font-black px-3 py-1.5 rounded-xl">Sign In</button>
+  </div>
 
   <!-- Navigation Tabs -->
   <div class="w-full max-w-md mt-4 grid grid-cols-3 bg-slate-900 p-1 rounded-2xl border border-slate-800">
@@ -49,7 +60,6 @@
         <div id="active-count" class="text-sm font-bold text-emerald-400 mt-0.5">0 Trades</div>
       </div>
     </div>
-
     <div class="flex flex-col gap-2">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Open Positions</h3>
       <div id="bets-feed" class="flex flex-col gap-3"></div>
@@ -59,28 +69,23 @@
   <!-- LEADERBOARD VIEW -->
   <div id="view-leaderboard" class="w-full max-w-md hidden flex-col gap-3 mt-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl">
-      <h3 class="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">🏆 Top Predictors This Week</h3>
-      <div class="flex flex-col gap-2.5">
-        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
-          <div class="flex items-center gap-3">
-            <span class="font-black text-amber-400 text-sm">#1</span>
-            <div>
-              <div class="font-bold text-slate-100">@SatoshiN</div>
-              <div class="text-[10px] text-slate-500">14 Win Streak</div>
-            </div>
-          </div>
-          <span class="font-bold text-emerald-400">+$12,450</span>
-        </div>
-        <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
-          <div class="flex items-center gap-3">
-            <span class="font-black text-slate-300 text-sm">#2</span>
-            <div>
-              <div class="font-bold text-slate-100">@AlexTech</div>
-              <div class="text-[10px] text-slate-500">9 Win Streak</div>
-            </div>
-          </div>
-          <span class="font-bold text-emerald-400">+$8,120</span>
-        </div>
+      <h3 class="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">🏆 Top Predictors</h3>
+      <div id="leaderboard-list" class="flex flex-col gap-2.5"></div>
+    </div>
+  </div>
+
+  <!-- AUTH MODAL -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-sm text-white">Join PULSE</h3>
+        <button onclick="toggleAuthModal()" class="text-slate-400 text-xs font-bold bg-slate-800 px-2 py-1 rounded-full">✕</button>
+      </div>
+      <input id="auth-email" type="email" placeholder="Email address" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+      <input id="auth-password" type="password" placeholder="Password" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+      <div class="grid grid-cols-2 gap-2 mt-1">
+        <button onclick="handleAuth('login')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs">Log In</button>
+        <button onclick="handleAuth('signup')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 rounded-xl text-xs">Sign Up</button>
       </div>
     </div>
   </div>
@@ -100,80 +105,80 @@
     </div>
   </div>
 
-  <!-- FLEX CARD / SHARE MODAL -->
-  <div id="flex-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
-    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500/40 w-full max-w-sm rounded-3xl p-6 flex flex-col gap-5 shadow-2xl text-center relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
-      
-      <div class="flex justify-center items-center gap-2">
-        <div class="bg-emerald-400 text-slate-950 font-black p-1.5 rounded-lg text-sm">⚡</div>
-        <span class="font-black text-xl tracking-tight text-white">PULSE</span>
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <span class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">TRADE CASHED OUT</span>
-        <h3 id="flex-title" class="text-base font-black text-white leading-snug px-2">GPT-5 Released Before Dec 2026</h3>
-      </div>
-
-      <div class="bg-slate-950 border border-slate-800/80 p-4 rounded-2xl flex justify-around items-center">
-        <div>
-          <div class="text-[9px] text-slate-500 uppercase font-bold">Pick</div>
-          <div id="flex-side" class="text-sm font-black text-emerald-400">YES</div>
-        </div>
-        <div class="h-6 w-px bg-slate-800"></div>
-        <div>
-          <div class="text-[9px] text-slate-500 uppercase font-bold">Profit</div>
-          <div id="flex-profit" class="text-sm font-black text-emerald-400">+$14.70</div>
-        </div>
-      </div>
-
-      <div class="text-xs text-slate-400 font-semibold italic">"Called it on PULSE ⚡"</div>
-
-      <div class="flex flex-col gap-2">
-        <button onclick="copyFlexShare()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition-all text-xs">
-          📋 Copy Share Text
-        </button>
-        <button onclick="closeFlexModal()" class="text-slate-500 text-xs font-bold py-1">
-          Done
-        </button>
-      </div>
-    </div>
-  </div>
-
   <script>
+    // Supabase Initialization
+    const SUPABASE_URL = "https://analmfeocrybnzmzuckv.supabase.co";
+    const SUPABASE_PUB_KEY = "Sb_publishable_ANXps6-2My29UcLOIZfocQ_say9WpoC";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUB_KEY);
+
     let userBalance = 250.00;
+    let currentUser = null;
     let activeMarketId = null;
     let myBets = [];
 
     const markets = [
-      { 
-        id: 1, 
-        category: 'Tech', 
-        title: 'GPT-5 released before December 2026?', 
-        yes: 68, 
-        no: 32, 
-        vol: '$1.4M',
-        comments: [
-          { user: '@SamA', text: 'Training run is almost done, easily yes.' }
-        ]
-      },
-      { 
-        id: 2, 
-        category: 'Finance', 
-        title: 'Bitcoin breaks $120,000 in 2026?', 
-        yes: 42, 
-        no: 58, 
-        vol: '$3.8M',
-        comments: [
-          { user: '@Whale99', text: 'Institutional inflows are crazy right now.' }
-        ]
-      }
+      { id: 1, category: 'Tech', title: 'GPT-5 released before December 2026?', yes: 68, no: 32, vol: '$1.4M' },
+      { id: 2, category: 'Finance', title: 'Bitcoin breaks $120,000 in 2026?', yes: 42, no: 58, vol: '$3.8M' }
     ];
+
+    async function initApp() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        currentUser = user;
+        document.getElementById('auth-banner').classList.add('hidden');
+        document.getElementById('user-display').innerText = `@${user.email.split('@')[0]}`;
+        document.getElementById('user-display').classList.remove('hidden');
+        await loadUserProfile();
+      }
+      renderMarkets();
+      renderActivity();
+      loadLeaderboard();
+    }
+
+    async function loadUserProfile() {
+      if (!currentUser) return;
+      let { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      if (data) {
+        userBalance = parseFloat(data.balance);
+        document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
+      } else {
+        await supabaseClient.from('profiles').insert([{ id: currentUser.id, username: currentUser.email.split('@')[0], balance: 250.00 }]);
+      }
+    }
+
+    async function saveBalance() {
+      document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
+      if (currentUser) {
+        await supabaseClient.from('profiles').update({ balance: userBalance }).eq('id', currentUser.id);
+      }
+    }
+
+    async function handleAuth(type) {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) return alert("Please enter email and password!");
+
+      let res = type === 'signup' 
+        ? await supabaseClient.auth.signUp({ email, password })
+        : await supabaseClient.auth.signInWithPassword({ email, password });
+
+      if (res.error) {
+        alert(res.error.message);
+      } else {
+        alert("Success!");
+        location.reload();
+      }
+    }
+
+    function toggleAuthModal() {
+      const m = document.getElementById('auth-modal');
+      m.classList.toggle('hidden');
+      m.classList.toggle('flex');
+    }
 
     function renderMarkets() {
       const feed = document.getElementById('market-feed');
       feed.innerHTML = '';
-
       markets.forEach(m => {
         const card = document.createElement('div');
         card.className = "bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4";
@@ -182,9 +187,7 @@
             <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-500/20">${m.category.toUpperCase()}</span>
             <span class="text-xs text-slate-500">Vol: ${m.vol}</span>
           </div>
-
           <h2 class="text-lg font-bold text-white leading-snug">${m.title}</h2>
-
           <div class="flex flex-col gap-1.5">
             <div class="flex justify-between text-xs font-bold">
               <span class="text-emerald-400">YES ${m.yes}¢ (${m.yes}%)</span>
@@ -195,20 +198,12 @@
               <div class="bg-rose-500 h-full" style="width: ${m.no}%"></div>
             </div>
           </div>
-
           <div class="grid grid-cols-2 gap-2 mt-1">
-            <button onclick="placeBet('${m.title}', 'YES', ${m.yes})" class="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl text-xs text-center">
-              BET YES (${m.yes}¢)
-            </button>
-            <button onclick="placeBet('${m.title}', 'NO', ${m.no})" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl text-xs text-center">
-              BET NO (${m.no}¢)
-            </button>
+            <button onclick="placeBet('${m.title}', 'YES', ${m.yes})" class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold py-3 rounded-xl text-xs">BET YES (${m.yes}¢)</button>
+            <button onclick="placeBet('${m.title}', 'NO', ${m.no})" class="bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold py-3 rounded-xl text-xs">BET NO (${m.no}¢)</button>
           </div>
-
-          <div class="pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs text-slate-400">
-            <button onclick="openComments(${m.id})" class="text-slate-400 hover:text-emerald-400 font-semibold flex items-center gap-1">
-              💬 ${m.comments.length} Discussion
-            </button>
+          <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+            <button onclick="openComments(${m.id})" class="text-slate-400 hover:text-emerald-400 font-semibold flex items-center gap-1">💬 Discussion</button>
           </div>
         `;
         feed.appendChild(card);
@@ -218,104 +213,65 @@
     function placeBet(title, side, priceCents) {
       if (userBalance < 10) return alert("Insufficient funds!");
       userBalance -= 10;
-      document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
+      saveBalance();
 
-      const potentialPayout = (10 / (priceCents / 100)).toFixed(2);
-
-      myBets.push({
-        id: Date.now(),
-        title: title,
-        side: side,
-        amount: 10,
-        priceBought: priceCents,
-        payout: potentialPayout
-      });
-
+      myBets.push({ id: Date.now(), title, side, amount: 10, payout: (10 / (priceCents / 100)).toFixed(2) });
       renderActivity();
-      alert(`Placed $10 bet on ${side}! Check your Activity tab.`);
+      alert(`Placed $10 bet on ${side}!`);
     }
 
     function renderActivity() {
       const feed = document.getElementById('bets-feed');
       feed.innerHTML = '';
-
       document.getElementById('active-count').innerText = `${myBets.length} Trades`;
-
       if (myBets.length === 0) {
-        feed.innerHTML = `<div class="bg-slate-900/50 border border-slate-800/80 p-6 rounded-2xl text-center text-xs text-slate-500">No active positions yet. Place a bet from the Markets tab!</div>`;
+        feed.innerHTML = `<div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl text-center text-xs text-slate-500">No open positions.</div>`;
       } else {
         myBets.forEach(b => {
           const div = document.createElement('div');
           div.className = "bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center text-xs";
           div.innerHTML = `
             <div>
-              <div class="flex items-center gap-2">
-                <span class="${b.side === 'YES' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'} font-bold px-2 py-0.5 rounded text-[10px]">${b.side}</span>
-                <span class="font-bold text-white truncate max-w-[170px]">${b.title}</span>
-              </div>
-              <div class="text-[10px] text-slate-500 mt-1">Stake: $${b.amount}.00 • Max Payout: $${b.payout}</div>
+              <span class="${b.side === 'YES' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${b.side}</span> - ${b.title}
+              <div class="text-[10px] text-slate-500">Stake: $${b.amount} • Payout: $${b.payout}</div>
             </div>
-            <button onclick="triggerCashOut(${b.id})" class="bg-emerald-500 text-slate-950 text-[10px] font-black px-3 py-2 rounded-xl shadow-lg shadow-emerald-500/10">Cash Out</button>
+            <button onclick="cashOut(${b.id}, ${b.payout})" class="bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-xl">Cash Out</button>
           `;
           feed.appendChild(div);
         });
       }
-
-      const totalInBets = myBets.length * 10;
-      const totalVal = userBalance + totalInBets;
-      document.getElementById('portfolio-val').innerText = '$' + totalVal.toFixed(2);
+      document.getElementById('portfolio-val').innerText = '$' + (userBalance + (myBets.length * 10)).toFixed(2);
     }
 
-    function triggerCashOut(id) {
-      const b = myBets.find(x => x.id === id);
-      const profit = (b.payout - b.amount).toFixed(2);
-
-      document.getElementById('flex-title').innerText = b.title;
-      document.getElementById('flex-side').innerText = b.side;
-      document.getElementById('flex-profit').innerText = `+$${profit}`;
-
-      userBalance += parseFloat(b.payout);
-      document.getElementById('balance').innerText = '$' + userBalance.toFixed(2);
-
-      myBets = myBets.filter(x => x.id !== id);
+    function cashOut(id, payout) {
+      userBalance += parseFloat(payout);
+      saveBalance();
+      myBets = myBets.filter(b => b.id !== id);
       renderActivity();
-
-      const modal = document.getElementById('flex-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
     }
 
-    function closeFlexModal() {
-      const modal = document.getElementById('flex-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+    async function loadLeaderboard() {
+      let { data } = await supabaseClient.from('profiles').select('username, balance').order('balance', { ascending: false }).limit(5);
+      const list = document.getElementById('leaderboard-list');
+      list.innerHTML = '';
+      if (data && data.length > 0) {
+        data.forEach((p, idx) => {
+          list.innerHTML += `
+            <div class="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+              <span class="font-bold text-slate-300">#${idx + 1} @${p.username}</span>
+              <span class="font-bold text-emerald-400">$${parseFloat(p.balance).toFixed(2)}</span>
+            </div>`;
+        });
+      } else {
+        list.innerHTML = `<div class="text-xs text-slate-500 text-center py-2">Sign in to claim #1 on the board!</div>`;
+      }
     }
 
-    function copyFlexShare() {
-      const title = document.getElementById('flex-title').innerText;
-      const profit = document.getElementById('flex-profit').innerText;
-      const text = `Just cashed out ${profit} on PULSE calling "${title}"! ⚡ Check out PULSE app to trade live event predictions.`;
-      navigator.clipboard.writeText(text);
-      alert("Share text copied to clipboard!");
-    }
-
-    function switchView(view) {
-      document.getElementById('view-markets').classList.toggle('hidden', view !== 'markets');
-      document.getElementById('view-activity').classList.toggle('hidden', view !== 'activity');
-      document.getElementById('view-leaderboard').classList.toggle('hidden', view !== 'leaderboard');
-      
-      document.getElementById('tab-markets').className = view === 'markets' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
-      document.getElementById('tab-activity').className = view === 'activity' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
-      document.getElementById('tab-leaderboard').className = view === 'leaderboard' ? 'py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-950 transition-all' : 'py-2 rounded-xl text-xs font-bold text-slate-400 transition-all';
-    }
-
-    function openComments(id) {
+    async function openComments(id) {
       activeMarketId = id;
-      const m = markets.find(x => x.id === id);
-      document.getElementById('modal-title').innerText = m.title;
-      renderComments();
       document.getElementById('comment-modal').classList.remove('hidden');
       document.getElementById('comment-modal').classList.add('flex');
+      loadComments();
     }
 
     function closeComments() {
@@ -323,30 +279,33 @@
       document.getElementById('comment-modal').classList.remove('flex');
     }
 
-    function renderComments() {
-      const m = markets.find(x => x.id === activeMarketId);
+    async function loadComments() {
+      let { data } = await supabaseClient.from('comments').select('*').eq('market_id', activeMarketId).order('created_at', { ascending: true });
       const list = document.getElementById('comment-list');
       list.innerHTML = '';
-      m.comments.forEach(c => {
-        const div = document.createElement('div');
-        div.className = "bg-slate-950 p-2.5 rounded-xl border border-slate-800";
-        div.innerHTML = `<span class="font-bold text-emerald-400">${c.user}:</span> <span class="text-slate-300">${c.text}</span>`;
-        list.appendChild(div);
-      });
+      if (data) {
+        data.forEach(c => {
+          list.innerHTML += `<div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800"><span class="font-bold text-emerald-400">@${c.username}:</span> <span class="text-slate-300">${c.comment_text}</span></div>`;
+        });
+      }
     }
 
-    function addComment() {
+    async function addComment() {
       const input = document.getElementById('comment-input');
       if (!input.value.trim()) return;
-      const m = markets.find(x => x.id === activeMarketId);
-      m.comments.push({ user: '@You', text: input.value.trim() });
+      const author = currentUser ? currentUser.email.split('@')[0] : 'Guest';
+      await supabaseClient.from('comments').insert([{ market_id: activeMarketId, username: author, comment_text: input.value.trim() }]);
       input.value = '';
-      renderComments();
-      renderMarkets();
+      loadComments();
     }
 
-    renderMarkets();
-    renderActivity();
+    function switchView(view) {
+      document.getElementById('view-markets').classList.toggle('hidden', view !== 'markets');
+      document.getElementById('view-activity').classList.toggle('hidden', view !== 'activity');
+      document.getElementById('view-leaderboard').classList.toggle('hidden', view !== 'leaderboard');
+    }
+
+    initApp();
   </script>
 </body>
 </html>
